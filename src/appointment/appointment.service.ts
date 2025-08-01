@@ -33,6 +33,13 @@ export class AppointmentService {
       throw new BadRequestException('Slot already booked');
     }
 
+    if (slot.appointment && slot.appointment.isCancelled) {
+      // Disconnect the old cancelled appointment from the slot
+      await this.appointmentRepo.update(slot.appointment.id, {
+        slot: undefined,
+      });
+    }
+
     const appointment = this.appointmentRepo.create({
       doctor,
       slot,

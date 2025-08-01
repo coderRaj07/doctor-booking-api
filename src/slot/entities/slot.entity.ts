@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Doctor } from 'src/doctor/entities/doctor.entity';
-import { Appointment } from '../../appointment/entities/appointment.entity';
+import { Appointment } from 'src/appointment/entities/appointment.entity';
 
 @Entity()
 export class Slot {
@@ -29,6 +29,7 @@ export class Slot {
   @OneToOne(() => Appointment, (appointment) => appointment.slot, {
     nullable: true,
     cascade: true,
+    onDelete: 'SET NULL', // important to allow reuse
   })
   @JoinColumn()
   appointment: Appointment | null;
