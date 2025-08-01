@@ -24,6 +24,11 @@ export class SlotService {
     const end = new Date(dto.endTime);
     const interval = 30 * 60 * 1000; // 30 minutes in milliseconds
 
+    const now = new Date();
+    if (start < now) {
+      throw new BadRequestException('Cannot create slots in the past');
+    }
+
     if (start >= end) {
       throw new BadRequestException('Start time must be before end time');
     }
