@@ -23,6 +23,7 @@ export class AppointmentService {
   async create(doctorId: string, slotId: string, patientName: string) {
     const doctor = await this.doctorRepo.findOne({ where: { id: doctorId } });
     if (!doctor) throw new NotFoundException('Doctor not found');
+
     const slot = await this.slotRepo.findOne({
       where: { id: slotId },
       relations: ['appointment', 'doctor'],
@@ -34,10 +35,9 @@ export class AppointmentService {
     }
 
     if (slot.appointment && slot.appointment.isCancelled) {
-      // Disconnect the old cancelled appointment from the slot
-      await this.appointmentRepo.update(slot.appointment.id, {
-        slot: undefined,
-      });
+      const oldAppointment = slot.appointment;
+      oldAppointment.slot = null;
+      await this.appointmentRepo.save(oldAppointment);
     }
 
     const appointment = this.appointmentRepo.create({

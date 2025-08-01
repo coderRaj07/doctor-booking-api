@@ -19,9 +19,12 @@ export class Appointment {
   })
   doctor: Doctor;
 
-  @OneToOne(() => Slot, (slot) => slot.appointment)
+  @OneToOne(() => Slot, (slot) => slot.appointment, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn()
-  slot: Slot;
+  slot: Slot | null;
 
   @Column()
   patientName: string;
