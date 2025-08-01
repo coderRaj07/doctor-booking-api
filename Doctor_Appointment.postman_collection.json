@@ -1,0 +1,140 @@
+{
+	"info": {
+		"_postman_id": "d88320e6-8942-4ef0-a40d-1931d8ccee8c",
+		"name": "Doctor_Appointment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "34426322"
+	},
+	"item": [
+		{
+			"name": "GET doctors/:id/available-slots",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "GET /doctors",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "GET /doctors/:id",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "POST /slots/:doctorId",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/doctors/0cb2f4a7-e482-4681-9ac8-2dfeefcbbe36/available-slots",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"doctors",
+						"0cb2f4a7-e482-4681-9ac8-2dfeefcbbe36",
+						"available-slots"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET /slots/doctor/:id/all",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "GET /slots/doctor/:id/available",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "POST /appointments",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"doctorId\": \"0cb2f4a7-e482-4681-9ac8-2dfeefcbbe36\",\n  \"slotId\": \"1bd2f28d-46ae-42d4-838c-b38f2f03b863\",\n  \"patientName\": \"Rajendra\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/appointments",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"appointments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET /appointments",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/appointments?patient=raj&page=1&limit=5\n",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"appointments"
+					],
+					"query": [
+						{
+							"key": "patient",
+							"value": "raj"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "5\n"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE /appointments/:id",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
