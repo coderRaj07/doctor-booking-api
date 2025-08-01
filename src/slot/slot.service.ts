@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { Slot } from './entities/slot.entity';
 import { Doctor } from 'src/doctor/entities/doctor.entity';
 import { CreateSlotDto } from './dto/create-slot.dto';
@@ -75,6 +75,7 @@ export class SlotService {
     return this.slotRepo.find({
       where: {
         doctor: { id: doctorId },
+        startTime: MoreThan(new Date()), // To keep old slots, but always filter upcoming ones in the booking screen
         isBooked: false,
       },
       order: { startTime: 'ASC' },
@@ -83,7 +84,7 @@ export class SlotService {
 
   async getAllSlotsForDoctor(doctorId: string) {
     return this.slotRepo.find({
-      where: { doctor: { id: doctorId } },
+      where: { doctor: { id: doctorId }, startTime: MoreThan(new Date()) }, // To keep old slots, but always filter upcoming ones in the booking screen
       relations: ['appointment'],
     });
   }
