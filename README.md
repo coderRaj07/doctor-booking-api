@@ -10,20 +10,8 @@
 * `specialization`: string
 * **Relations:**
 
-  * `hasMany` → **Availability**
   * `hasMany` → **Slot**
   * `hasMany` → **Appointment**
-
----
-
-### 📆 Availability
-
-* `id`: UUID (PK)
-* `doctorId`: FK → Doctor
-* `startTime`: timestamp
-* `endTime`: timestamp
-* **Represents the window in which a doctor is available (e.g., 9am–1pm)**
-* **Slots will be generated from this window.**
 
 ---
 
@@ -36,7 +24,6 @@
 * `isBooked`: boolean
 * `appointmentId`: FK → Appointment (nullable, 1–1)
 * **Represents a 30-min or 1-hour appointment slot.**
-* **Slots are generated from `Availability`.**
 
 ---
 
@@ -60,7 +47,7 @@
 
 
 
-* A **Doctor** has many **Availabilities**, **Slots**, and **Appointments**.
+* A **Doctor** has many **Slots**, and **Appointments**.
 * A **Slot** is tied to one **Doctor** and **may** have one **Appointment**.
 * An **Appointment** links a **Slot**, **Doctor**, and **Patient Name**.
 
