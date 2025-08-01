@@ -1,3 +1,9 @@
+# 🏥 Doctor Appointment Booking System — API & Data Model Documentation
+
+This backend service enables patients to book appointments with doctors through a time-slot-based system. Built using **NestJS**, it supports doctor and slot management, appointment creation, and cancellation — with robust validations to prevent double bookings.
+
+🔗 **Live API Base URL**:
+`https://doctor-booking-api.onrender.com/`
 
 ---
 
@@ -5,88 +11,114 @@
 
 ### 🩺 Doctor
 
-* `id`: UUID (PK)
-* `name`: string
-* `specialization`: string
-* **Relations:**
+Represents a medical practitioner.
 
-  * `hasMany` → **Slot**
-  * `hasMany` → **Appointment**
+| Field            | Type   | Description                 |
+| ---------------- | ------ | --------------------------- |
+| `id`             | UUID   | Primary key                 |
+| `name`           | string | Doctor's name               |
+| `specialization` | string | e.g., Cardiology, Neurology |
+
+**Relationships**:
+
+* `hasMany` → **Slot** (available times)
+* `hasMany` → **Appointment** (booked visits)
 
 ---
 
 ### ⏱ Slot
 
-* `id`: UUID (PK)
-* `doctorId`: FK → Doctor
-* `startTime`: timestamp
-* `endTime`: timestamp
-* `isBooked`: boolean
-* `appointmentId`: FK → Appointment (nullable, 1–1)
-* **Represents a 30-min or 1-hour appointment slot.**
+Represents a 30-minute or 1-hour time slot available for booking.
+
+| Field           | Type     | Description                 |
+| --------------- | -------- | --------------------------- |
+| `id`            | UUID     | Primary key                 |
+| `doctorId`      | UUID     | Linked doctor               |
+| `startTime`     | datetime | Slot start time             |
+| `endTime`       | datetime | Slot end time               |
+| `isBooked`      | boolean  | True if already booked      |
+| `appointmentId` | UUID     | Optional, FK to Appointment |
+
+**Notes**:
+
+* Each Slot is associated with exactly **one doctor**.
+* It may be linked to **one appointment** (or none if available).
 
 ---
 
 ### 📋 Appointment
 
-* `id`: UUID (PK)
-* `doctorId`: FK → Doctor
-* `slotId`: FK → Slot (1–1)
-* `patientName`: string
-* `isCancelled`: boolean
-* **Booking links a doctor, a slot, and patient name.**
-* Cancelling an appointment:
+Represents a booking made by a patient for a particular slot with a doctor.
 
-  * `isCancelled = true`
-  * `slot.isBooked = false`
-  * `slot.appointment = null`
+| Field         | Type    | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| `id`          | UUID    | Primary key                          |
+| `doctorId`    | UUID    | Doctor associated                    |
+| `slotId`      | UUID    | Slot being booked                    |
+| `patientName` | string  | Name of the patient                  |
+| `isCancelled` | boolean | True if the appointment is cancelled |
 
----
+**Cancellation Logic**:
 
-## 🔗 **Diagram (Relationships Summary)**
-
-
-
-* A **Doctor** has many **Slots**, and **Appointments**.
-* A **Slot** is tied to one **Doctor** and **may** have one **Appointment**.
-* An **Appointment** links a **Slot**, **Doctor**, and **Patient Name**.
+* `isCancelled = true`
+* Related `slot.isBooked = false`
+* Related `slot.appointment = null`
 
 ---
 
-## ✅ Slot Booking Flow
+## 🔗 **Entity Relationships Summary**
 
-1. **Doctor creates availability** → e.g., 9:00 AM to 12:00 PM
-2. **System generates slots** → 9–9:30, 9:30–10:00, etc.
-3. **Patient sees available slots** (where `isBooked = false`)
+```txt
+Doctor
+  └─ has many Slots
+  └─ has many Appointments
+
+Slot
+  └─ belongs to one Doctor
+  └─ may have one Appointment
+
+Appointment
+  └─ links to one Slot and one Doctor
+```
+
+---
+
+## 🔁 Slot Booking Flow
+
+1. **Doctor sets availability** → e.g., 9:00 AM to 12:00 PM
+2. **System generates slots** (in 30-min chunks)
+3. **Frontend lists unbooked slots** (`isBooked = false`)
 4. **Patient books a slot**:
 
-   * Create appointment
-   * Set `isBooked = true`
-   * Assign appointment to that slot
-5. **Patient cancels appointment**:
+   * Create an appointment
+   * Set `slot.isBooked = true`
+   * Link slot → appointment
+5. **If appointment is cancelled**:
 
-   * Mark appointment as `isCancelled = true`
-   * Reset `slot.isBooked = false` and `slot.appointment = null`
+   * Set `appointment.isCancelled = true`
+   * Reset `slot.isBooked = false`
+   * Remove appointment from slot (`slot.appointment = null`)
 
 ---
+
 ## 🩺 Doctor Endpoints
 
 ### 1. `GET /doctors`
 
-**Query Params (optional):**
+Fetch doctors with optional filters and pagination.
 
-* `specialization=cardio`
+**Query Parameters**:
+
 * `name=arun`
+* `specialization=cardio`
 * `page=1`
 * `limit=10`
-
-✅ Sample:
 
 ```http
 GET /doctors?specialization=neuro&page=1&limit=5
 ```
 
-✅ Response:
+✅ **Response**:
 
 ```json
 {
@@ -104,25 +136,23 @@ GET /doctors?specialization=neuro&page=1&limit=5
 
 ### 2. `GET /doctors/:id`
 
+Get basic info of a doctor by ID.
+
 ```http
 GET /doctors/f5f6-...-uuid
-```
-
-✅ Response:
-
-```json
-{ "id": "...", "name": "Dr. Arun", "specialization": "Cardiology" }
 ```
 
 ---
 
 ### 3. `GET /doctors/:id/available-slots`
 
+Returns all **unbooked slots** for the doctor.
+
 ```http
 GET /doctors/f5f6-.../available-slots
 ```
 
-✅ Response:
+✅ **Response**:
 
 ```json
 [
@@ -136,14 +166,14 @@ GET /doctors/f5f6-.../available-slots
 ```
 
 ---
+
 ## 🕒 Slot Endpoints
 
 ### 4. `POST /slots/:doctorId`
 
-> Used to manually create a new slot for a doctor
-> *(doctor ID comes from frontend or seeded data)*
+Create a slot manually for a doctor.
 
-#### Payload:
+📥 **Payload**:
 
 ```json
 {
@@ -152,7 +182,7 @@ GET /doctors/f5f6-.../available-slots
 }
 ```
 
-✅ Response:
+✅ **Response**:
 
 ```json
 {
@@ -163,19 +193,19 @@ GET /doctors/f5f6-.../available-slots
 }
 ```
 
-> ❌ Will throw `400 Bad Request` if overlapping another slot.
+> 🛑 Rejects if it overlaps an existing slot (`400 Bad Request`)
 
 ---
 
 ### 5. `GET /slots/doctor/:id/all`
 
-Return all slots for a doctor.
+Get **all** slots for a doctor, whether booked or not.
 
 ---
 
 ### 6. `GET /slots/doctor/:id/available`
 
-Return only **unbooked** slots.
+Return only **unbooked** slots (`isBooked = false`).
 
 ---
 
@@ -183,7 +213,9 @@ Return only **unbooked** slots.
 
 ### 7. `POST /appointments`
 
-#### Payload:
+Create a new appointment by booking a slot.
+
+📥 **Payload**:
 
 ```json
 {
@@ -193,7 +225,7 @@ Return only **unbooked** slots.
 }
 ```
 
-✅ Response:
+✅ **Response**:
 
 ```json
 {
@@ -209,19 +241,15 @@ Return only **unbooked** slots.
 
 ### 8. `GET /appointments`
 
-**Query params (optional):**
+Get appointments (with optional patient name search and pagination).
 
-* `patient=Rajendra`
+**Query Parameters**:
+
+* `patient=raj`
 * `page=1`
 * `limit=5`
 
-✅ Sample:
-
-```http
-GET /appointments?patient=raj&page=1&limit=5
-```
-
-✅ Response:
+✅ **Response**:
 
 ```json
 {
@@ -245,17 +273,19 @@ GET /appointments?patient=raj&page=1&limit=5
 
 ### 9. `DELETE /appointments/:id`
 
+Cancel an appointment.
+
 ```http
 DELETE /appointments/a6b7-...-uuid
 ```
 
-✅ Behavior:
+✅ **Behavior**:
 
-* Marks `appointment.isCancelled = true`
-* Frees `slot.isBooked = false`
-* Removes slot.appointment
+* Marks appointment as `isCancelled = true`
+* Frees the slot (`isBooked = false`)
+* Removes slot link (`slot.appointment = null`)
 
-✅ Response:
+✅ **Response**:
 
 ```json
 {
@@ -266,4 +296,18 @@ DELETE /appointments/a6b7-...-uuid
 
 ---
 
+## 🌐 API Access
 
+To use this backend in your frontend app or Postman, point your requests to:
+
+```
+https://doctor-booking-api.onrender.com/
+```
+
+**Example**:
+
+```http
+GET https://doctor-booking-api.onrender.com/doctors?specialization=cardio
+```
+
+---
