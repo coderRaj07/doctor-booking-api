@@ -19,8 +19,10 @@ export class DoctorController {
   async getAll(
     @Query('specialization') specialization?: string,
     @Query('name') name?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
   ) {
-    return this.doctorService.findAll(specialization, name);
+    return this.doctorService.findAll(specialization, name, +page, +limit);
   }
 
   @Get(':id')
