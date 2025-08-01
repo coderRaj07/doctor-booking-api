@@ -21,13 +21,15 @@ export class AppointmentService {
   ) {}
 
   async create(doctorId: string, slotId: string, patientName: string) {
-    const doctor = await this.doctorRepo.findOne({ where: { id: doctorId } });
-    if (!doctor) throw new NotFoundException('Doctor not found');
+    const [doctor, slot] = await Promise.all([
+      this.doctorRepo.findOne({ where: { id: doctorId } }),
+      this.slotRepo.findOne({
+        where: { id: slotId },
+        relations: ['appointment', 'doctor'],
+      }),
+    ]);
 
-    const slot = await this.slotRepo.findOne({
-      where: { id: slotId },
-      relations: ['appointment', 'doctor'],
-    });
+    if (!doctor) throw new NotFoundException('Doctor not found');
     if (!slot) throw new NotFoundException('Slot not found');
 
     if (slot.isBooked && (!slot.appointment || !slot.appointment.isCancelled)) {
