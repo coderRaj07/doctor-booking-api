@@ -23,15 +23,15 @@ export class AppointmentService {
   async create(doctorId: string, slotId: string, patientName: string) {
     const doctor = await this.doctorRepo.findOne({ where: { id: doctorId } });
     if (!doctor) throw new NotFoundException('Doctor not found');
-
     const slot = await this.slotRepo.findOne({
       where: { id: slotId },
       relations: ['appointment', 'doctor'],
     });
     if (!slot) throw new NotFoundException('Slot not found');
-    if (slot.isBooked) throw new BadRequestException('Slot already booked');
-    if (slot.doctor.id !== doctorId)
-      throw new BadRequestException('Slot does not belong to the doctor');
+
+    if (slot.isBooked && (!slot.appointment || !slot.appointment.isCancelled)) {
+      throw new BadRequestException('Slot already booked');
+    }
 
     const appointment = this.appointmentRepo.create({
       doctor,
@@ -89,7 +89,6 @@ export class AppointmentService {
     const slot = appointment.slot;
     if (slot) {
       slot.isBooked = false;
-      slot.appointment = null;
       await this.slotRepo.save(slot);
     }
 
