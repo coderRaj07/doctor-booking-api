@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { Doctor } from '../doctor/entities/doctor.entity';
 import { Slot } from '../slot/entities/slot.entity';
@@ -18,41 +18,57 @@ export class AppointmentService {
     private doctorRepo: Repository<Doctor>,
     @InjectRepository(Slot)
     private slotRepo: Repository<Slot>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(doctorId: string, slotId: string, patientName: string) {
-    const [doctor, slot] = await Promise.all([
-      this.doctorRepo.findOne({ where: { id: doctorId } }),
-      this.slotRepo.findOne({
+    return this.dataSource.transaction(async (manager) => {
+      // Step 1: Lock only Slot row — no relations
+      const slot = await manager.findOne(Slot, {
         where: { id: slotId },
-        relations: ['appointment', 'doctor'],
-      }),
-    ]);
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!doctor) throw new NotFoundException('Doctor not found');
-    if (!slot) throw new NotFoundException('Slot not found');
+      if (!slot) throw new NotFoundException('Slot not found');
 
-    if (slot.isBooked && (!slot.appointment || !slot.appointment.isCancelled)) {
-      throw new BadRequestException('Slot already booked');
-    }
+      // Step 2: Fetch Doctor and Appointment separately
+      const [doctor, appointment] = await Promise.all([
+        manager.findOne(Doctor, { where: { id: doctorId } }),
+        slot.appointment
+          ? manager.findOne(Appointment, { where: { id: slot.appointment.id } })
+          : null,
+      ]);
 
-    if (slot.appointment && slot.appointment.isCancelled) {
-      const oldAppointment = slot.appointment;
-      oldAppointment.slot = null;
-      await this.appointmentRepo.save(oldAppointment);
-    }
+      if (!doctor) throw new NotFoundException('Doctor not found');
 
-    const appointment = this.appointmentRepo.create({
-      doctor,
-      slot,
-      patientName,
+      // Manually attach doctor and appointment
+      slot.doctor = doctor;
+      slot.appointment = appointment;
+
+      // Step 3: Check booking rules
+      if (slot.isBooked && (!appointment || !appointment.isCancelled)) {
+        throw new BadRequestException('Slot already booked');
+      }
+
+      // Step 4: Detach old cancelled appointment if exists
+      if (appointment && appointment.isCancelled) {
+        appointment.slot = null;
+        await manager.save(Appointment, appointment);
+      }
+
+      // Step 5: Create and link appointment
+      const newAppointment = manager.create(Appointment, {
+        doctor,
+        slot,
+        patientName,
+      });
+
+      slot.isBooked = true;
+      slot.appointment = newAppointment;
+
+      await manager.save(Slot, slot);
+      return manager.save(Appointment, newAppointment);
     });
-
-    slot.isBooked = true;
-    slot.appointment = appointment;
-
-    await this.slotRepo.save(slot);
-    return this.appointmentRepo.save(appointment);
   }
 
   async getAppointments(patientName?: string, page = 1, limit = 10) {
