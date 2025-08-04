@@ -4,7 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import {
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { Slot } from './entities/slot.entity';
 import { Doctor } from 'src/doctor/entities/doctor.entity';
 import { CreateSlotDto } from './dto/create-slot.dto';
@@ -44,8 +49,8 @@ export class SlotService {
       const existing = await this.slotRepo.findOne({
         where: {
           doctor: { id: doctorId },
-          startTime: slotStart,
-          endTime: slotEnd,
+          startTime: LessThanOrEqual(slotEnd),
+          endTime: MoreThanOrEqual(slotStart),
         },
       });
 
